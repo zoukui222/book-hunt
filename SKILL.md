@@ -1,7 +1,7 @@
 ---
 name: book-hunt
 description: 按书名搜公版书并下载（古籍/名著/外国文学）。
-version: 1.0.0
+version: 1.0.1
 author: 刘政涛, Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -71,6 +71,7 @@ python scripts/bookhunt.py fetch "wikisource:論語" --out books --format txt --
 - **维基文库 REST 接口脏**：`/api/rest_v1/page/html` 会把模板 JSON 塞进正文，必须用 `action=parse&prop=text`，再用 `clean_ws` 清掉翻页箭头。
 - **全文检索噪声**：维基文库会返回一堆判决书、讨论页。脚本按标题长度过滤（`max(8, 3×查询长度)`），过滤条数会打印出来。
 - **ctext.org 不要爬**：中国哲学书电子化计划明确要求研究用途走订阅，别把它加进源列表。
+- **书名搜不到不代表库里没有**：Gutenberg 的中文馆藏可以从 `https://www.gutenberg.org/browse/languages/zh` 的整页索引里 grep 书名/作者（繁体），命中后再用 `/ebooks/{id}` 取 epub/txt。改名、异体字、简体输入都会让搜索页空手而归。
 - **openlibrary / archive.org 本机直连不通**：所以没接进来。要接就从 `SOURCES` 加，`ALLOWED_HOSTS` 同步加域名，否则会被白名单拦住。
 
 ## Verification
@@ -78,10 +79,12 @@ python scripts/bookhunt.py fetch "wikisource:論語" --out books --format txt --
 ```bash
 python scripts/bookhunt.py probe
 python scripts/bookhunt.py search "论语" --limit 3
-python scripts/bookhunt.py fetch "wikisource:論語" --out /tmp/bt --format txt --max-pages 25
-python -c "import pathlib,glob;[print(f, pathlib.Path(f).stat().st_size) for f in glob.glob('/tmp/bt/*.txt')]"
-tail -1 /tmp/bt/manifest.jsonl
+python scripts/bookhunt.py fetch "wikisource:論語" --out ./bt --format txt --max-pages 25
+python -c "import pathlib,glob;[print(f, pathlib.Path(f).stat().st_size) for f in glob.glob('bt/*.txt')]"
+tail -1 bt/manifest.jsonl
 ```
+
+用相对目录（`./bt`）写例子：`/tmp/...` 在 Windows 上交给本地 Python 会变成 `C:\tmp` 或直接找不到，样例命令会当场翻车。
 
 判据：`probe` 至少一个源 200；`search` 有命中且标题对得上；`fetch` 打印 ✅ 且文件大小 > 100 KB（古籍全文）/ > 300 KB（长篇小说 epub）；manifest 里 `sha256` 与 `bytes` 齐备。
 

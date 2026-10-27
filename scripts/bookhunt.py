@@ -270,6 +270,8 @@ def clean_ws(text: str) -> str:
             continue
         if s.startswith("姊妹计划") or s.startswith("◄") or s.startswith("►"):
             continue
+        if s in ("[编辑]", "[編輯]") or s.startswith("Public domainPublic domain"):
+            continue
         out.append(ln.rstrip())
     return "\n".join(out)
 
